@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Qirui Liu (刘骐瑞) — Research on safety alignment of large reasoning models, on-policy self-distillation, and agentic reinforcement learning, plus technical notes.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <title>Qirui Liu (刘骐瑞) — Research &amp; Notes</title>
+  <link rel="icon" type="image/png" href="assets/portrait.png">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('qirui-theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = saved || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#app">Skip to main content</a>
+
+  <!-- Frosted Glass Apple Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a href="#/" class="nav-brand" id="nav-brand" aria-label="Qirui Liu Home">
+        <img src="assets/portrait.png" alt="" class="nav-avatar" width="24" height="24">
+        <span class="nav-brand-name">Qirui Liu</span>
+        <span class="nav-brand-zh">刘骐瑞</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#overview" data-nav="overview" class="nav-link is-active">Overview</a>
+        <a href="#research" data-nav="research" class="nav-link">Research</a>
+        <a href="#notes" data-nav="notes" class="nav-link">Notes</a>
+        <a href="#background" data-nav="background" class="nav-link">Background</a>
+        <a href="#life" data-nav="life" class="nav-link">Life</a>
+        <a href="#contact" data-nav="contact" class="nav-link">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button type="button" class="nav-search-btn" id="open-spotlight" aria-label="Search papers and notes (Command K)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20 20-3.8-3.8"/></svg>
+          <span class="nav-search-label">Search</span>
+          <kbd class="kbd">⌘K</kbd>
+        </button>
+
+        <button type="button" class="icon-btn" id="theme-toggle" aria-label="Toggle color theme" title="Toggle Light / Dark mode">
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2.5 12h2M19.5 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8Z"/></svg>
+        </button>
+
+        <button type="button" class="icon-btn nav-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Sheet -->
+    <div class="mobile-nav" id="mobile-nav" hidden>
+      <a href="#overview" data-nav="overview">Overview</a>
+      <a href="#research" data-nav="research">Research</a>
+      <a href="#notes" data-nav="notes">Notes</a>
+      <a href="#background" data-nav="background">Background</a>
+      <a href="#life" data-nav="life">Life</a>
+      <a href="#contact" data-nav="contact">Contact</a>
+    </div>
+
+    <!-- Article Reading Progress Bar -->
+    <div class="reading-progress" id="reading-progress" aria-hidden="true">
+      <div class="reading-progress-fill" id="reading-progress-fill"></div>
+    </div>
+  </header>
+
+  <!-- Main Application Root -->
+  <main id="app" tabindex="-1"></main>
+
+  <!-- Quick Look Lightbox (Paper Figures & Mermaid Diagrams) -->
+  <div class="modal-backdrop" id="lightbox" hidden role="dialog" aria-modal="true" aria-labelledby="lightbox-title">
+    <div class="lightbox-shell">
+      <div class="lightbox-header">
+        <div class="lightbox-title-wrap">
+          <span class="lightbox-badge" id="lightbox-badge">Quick Look</span>
+          <h3 class="lightbox-title" id="lightbox-title"></h3>
+        </div>
+        <div class="lightbox-controls">
+          <a href="#" id="lightbox-open-raw" class="pill-btn pill-btn--subtle" target="_blank" rel="noopener noreferrer" hidden>Open Original ↗</a>
+          <button type="button" class="icon-btn lightbox-close" id="lightbox-close" aria-label="Close preview">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="lightbox-stage" id="lightbox-stage"></div>
+      <p class="lightbox-caption" id="lightbox-caption"></p>
+    </div>
+  </div>
+
+  <!-- Spotlight Command Palette (⌘K) -->
+  <div class="modal-backdrop modal-backdrop--spotlight" id="spotlight" hidden role="dialog" aria-modal="true" aria-label="Spotlight search">
+    <div class="spotlight-shell">
+      <div class="spotlight-input-row">
+        <svg class="spotlight-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="m20 20-3.8-3.8"/></svg>
+        <input type="text" id="spotlight-input" class="spotlight-input" placeholder="Search papers, notes, topics, or actions…" autocomplete="off" spellcheck="false">
+        <kbd class="kbd">ESC</kbd>
+      </div>
+      <div class="spotlight-results" id="spotlight-results" role="listbox"></div>
+      <div class="spotlight-footer">
+        <span><kbd class="kbd">↑</kbd> <kbd class="kbd">↓</kbd> Navigate</span>
+        <span><kbd class="kbd">↵</kbd> Open</span>
+        <span><kbd class="kbd">ESC</kbd> Close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Local Markdown Draft Preview -->
+  <input type="file" id="local-md-input" accept=".md,.markdown,text/markdown,text/plain" hidden>
+
+  <!-- Floating Apple-Style Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Local Vendor Libraries (Offline-Ready) -->
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
+  <script src="vendor/hljs-dockerfile.min.js"></script>
+  <script src="vendor/mermaid.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

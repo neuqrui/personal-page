@@ -1,0 +1,36 @@
+[
+  {
+    "slug": "coding-agent-rl-prism",
+    "title": "Coding Agent RL：PRism 环境构建速查",
+    "subtitle": "从真实 GitHub PR 到可验证 Harbor Task：Builder Sandbox、Fail-to-Pass 验证与多 Agent 协作全景解析",
+    "date": "2026-11-22",
+    "category": "Agentic RL",
+    "tags": ["PRism", "Environment Synthesis", "Harbor", "K2-Horizon", "Coding Agent"],
+    "readingTime": "12 min read",
+    "language": "zh",
+    "file": "posts/coding-agent-rl-prism.md",
+    "accent": "blue",
+    "highlights": [
+      "真实 PR → Builder Sandbox → Buildah 镜像构建 → Fail-to-Pass 验证",
+      "6 大核心环境产物与状态文件逐一拆解（pytorch-ie PR #408 实例）",
+      "附完整 Mermaid 流程图与防 Reward Hacking Verifier 设计要点"
+    ]
+  },
+  {
+    "slug": "rl360-harbor-agentic-rl",
+    "title": "RL360 × Harbor：Agentic RL 架构与调用流程",
+    "subtitle": "拆解 Miles、Harbor、Mini-SWE Harness 与 Session Tracer 如何协同完成轨迹采集、Reward 汇合与 GRPO 策略更新",
+    "date": "2026-11-22",
+    "category": "RL Systems",
+    "tags": ["RL360", "Harbor", "GRPO", "Miles", "SGLang"],
+    "readingTime": "10 min read",
+    "language": "zh",
+    "file": "posts/rl360-harbor-agentic-rl.md",
+    "accent": "indigo",
+    "highlights": [
+      "四层架构全貌：Miles + Megatron-LM、Harbor、Sandbox 与推理追踪层",
+      "关键源码调用链与 Reward / Token / Logprob 两条独立返回路径",
+      "涵盖 10 条高频工程误区速查与最小源码阅读顺序"
+    ]
+  }
+]
