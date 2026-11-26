@@ -1628,6 +1628,51 @@ button {
   flex-wrap: wrap;
 }
 
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.visit-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.visit-counter[hidden] {
+  display: none;
+}
+
+.visit-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.visit-metric svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.visit-label {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.visit-sep {
+  color: var(--border-strong);
+}
+
 .footer-links {
   display: flex;
   align-items: center;

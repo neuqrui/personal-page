@@ -15,7 +15,8 @@ const state = {
   scrollSpyHandler: null,
   spotlightSelectedIdx: 0,
   spotlightItems: [],
-  toastTimer: null
+  toastTimer: null,
+  visitStats: null
 };
 
 const appEl = document.getElementById('app');
@@ -36,7 +37,9 @@ const ICONS = {
   expand: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`,
   copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
   star: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9L12 2.5Z"/></svg>`,
-  upload: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`
+  upload: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+  users: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  eye: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.06 12.35a1 1 0 0 1 0-.7C3.42 7.55 7.36 4.5 12 4.5s8.58 3.05 9.94 7.15a1 1 0 0 1 0 .7C20.58 16.45 16.64 19.5 12 19.5s-8.58-3.05-9.94-7.15Z"/><circle cx="12" cy="12" r="3"/></svg>`
 };
 
 /* ==========================================================================
@@ -143,6 +146,142 @@ async function hydrateGitHubStars() {
     } catch {
       // Keep snapshot value gracefully
     }
+  }
+}
+
+/* ==========================================================================
+   Visitor & Pageview Counter (Vercount API — Zero-Backend UV / PV Tracking)
+   ========================================================================== */
+const CANONICAL_SITE_BASE = 'https://neuqrui.github.io/personal-page/';
+const VERCOUNT_ENDPOINT = 'https://events.vercount.one/api/v2/log';
+const UV_STORAGE_KEY = 'qirui-personal-page-uv-v1';
+const VISIT_CACHE_KEY = 'qirui-personal-page-visit-cache-v1';
+
+function formatCount(num) {
+  const n = Number(num);
+  if (!Number.isFinite(n) || n < 0) return '—';
+  return new Intl.NumberFormat('en-US').format(n);
+}
+
+function renderFooterCounterHtml() {
+  const stats = state.visitStats;
+  const hiddenAttr = stats ? '' : ' hidden';
+  const uv = stats ? formatCount(Math.max(1, stats.site_uv)) : '—';
+  const pv = stats ? formatCount(Math.max(1, stats.site_pv)) : '—';
+  return `
+    <div class="visit-counter" data-visit-counter${hiddenAttr} title="Total unique visitors and page views">
+      <span class="visit-metric">${ICONS.users}<span data-visit-uv>${uv}</span> <span class="visit-label">Visitors</span></span>
+      <span class="visit-sep" aria-hidden="true">·</span>
+      <span class="visit-metric">${ICONS.eye}<span data-visit-pv>${pv}</span> <span class="visit-label">Views</span></span>
+    </div>
+  `;
+}
+
+function paintVisitStats(stats, updateArticleViews = false) {
+  if (!stats) return;
+  const uv = formatCount(Math.max(1, Number(stats.site_uv || 0)));
+  const pv = formatCount(Math.max(1, Number(stats.site_pv || 0)));
+
+  document.querySelectorAll('[data-visit-counter]').forEach((wrap) => {
+    wrap.hidden = false;
+    const uvEl = wrap.querySelector('[data-visit-uv]');
+    const pvEl = wrap.querySelector('[data-visit-pv]');
+    if (uvEl) uvEl.textContent = uv;
+    if (pvEl) pvEl.textContent = pv;
+  });
+
+  if (updateArticleViews && Number(stats.page_pv) > 0) {
+    const pageEl = document.querySelector('[data-article-views]');
+    if (pageEl) {
+      const views = Number(stats.page_pv);
+      pageEl.textContent = ` · ${formatCount(views)} ${views === 1 ? 'view' : 'views'}`;
+      pageEl.hidden = false;
+    }
+  }
+}
+
+async function trackVisit(pageSubpath = '', { isArticle = false } = {}) {
+  // Show cached site stats immediately to avoid layout shift
+  if (!state.visitStats) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(VISIT_CACHE_KEY) || 'null');
+      if (cached && typeof cached.site_pv === 'number') {
+        state.visitStats = cached;
+      }
+    } catch {}
+  }
+  if (state.visitStats) {
+    paintVisitStats(state.visitStats, false);
+  }
+
+  const cleanSubpath = pageSubpath.replace(/^\/+/, '');
+  const canonicalUrl = `${CANONICAL_SITE_BASE}${cleanSubpath}`;
+  const isLocalHost =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.protocol === 'file:';
+
+  // Avoid double-counting the same page on rapid SPA re-renders within the same tab session
+  const sessionKey = `qirui-counted:${canonicalUrl}`;
+  try {
+    const prevPageData = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
+    if (prevPageData) {
+      state.visitStats = {
+        site_uv: Math.max(state.visitStats?.site_uv || 0, prevPageData.site_uv || 0),
+        site_pv: Math.max(state.visitStats?.site_pv || 0, prevPageData.site_pv || 0),
+        page_pv: prevPageData.page_pv || 0
+      };
+      paintVisitStats(state.visitStats, isArticle);
+      return;
+    }
+  } catch {}
+
+  let isNewUv = false;
+  if (!isLocalHost) {
+    try {
+      if (localStorage.getItem(UV_STORAGE_KEY) !== '1') {
+        isNewUv = true;
+      }
+    } catch {}
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(VERCOUNT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: canonicalUrl, isNewUv }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) return;
+    const json = await res.json();
+    const d = json && json.data ? json.data : json;
+    if (!d || (typeof d.site_pv !== 'number' && typeof d.site_uv !== 'number')) return;
+
+    if (isNewUv) {
+      try {
+        localStorage.setItem(UV_STORAGE_KEY, '1');
+      } catch {}
+    }
+
+    const stats = {
+      site_uv: Number(d.site_uv || 0),
+      site_pv: Number(d.site_pv || 0),
+      page_pv: Number(d.page_pv || 0)
+    };
+    state.visitStats = stats;
+
+    try {
+      localStorage.setItem(VISIT_CACHE_KEY, JSON.stringify({ site_uv: stats.site_uv, site_pv: stats.site_pv }));
+      sessionStorage.setItem(sessionKey, JSON.stringify(stats));
+    } catch {}
+
+    paintVisitStats(stats, isArticle);
+  } catch {
+    clearTimeout(timer);
+    // Keep cached value or remain quietly hidden if offline
   }
 }
 
@@ -508,7 +647,10 @@ function renderHomeView(scrollToId = null) {
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <span>© 2026 Qirui Liu (刘骐瑞) · Designed with Apple-inspired clarity.</span>
+        <div class="footer-left">
+          <span>© 2026 Qirui Liu (刘骐瑞)</span>
+          ${renderFooterCounterHtml()}
+        </div>
         <div class="footer-links">
           <a href="https://neuqrui.github.io" target="_blank" rel="noopener noreferrer">neuqrui.github.io</a>
           <a href="https://github.com/neuqrui" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -523,6 +665,7 @@ function renderHomeView(scrollToId = null) {
   bindHomeInteractions();
   hydrateGitHubStars();
   setupHomeScrollSpy();
+  trackVisit('');
 
   if (scrollToId) {
     requestAnimationFrame(() => {
@@ -673,7 +816,7 @@ async function renderMarkdownArticle({ post, markdown, isLocalDraft = false, col
         <header class="article-header">
           <div class="article-meta-top">
             <span class="badge ${post.accent === 'indigo' ? 'badge--indigo' : post.accent === 'teal' ? 'badge--teal' : ''}">${escapeHtml(post.category || (isLife ? 'Journal' : 'Note'))}</span>
-            <span class="note-date-read">${escapeHtml(post.date || 'Draft')} · ${escapeHtml(post.readingTime || estimateReadingTime(markdown))}</span>
+            <span class="note-date-read">${escapeHtml(post.date || 'Draft')} · ${escapeHtml(post.readingTime || estimateReadingTime(markdown))}<span data-article-views hidden></span></span>
           </div>
           <h1 class="article-title">${escapeHtml(post.title)}</h1>
           ${post.subtitle ? `<p class="article-subtitle">${escapeHtml(post.subtitle)}</p>` : ''}
@@ -715,7 +858,10 @@ async function renderMarkdownArticle({ post, markdown, isLocalDraft = false, col
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <span>© 2026 Qirui Liu (刘骐瑞)</span>
+        <div class="footer-left">
+          <span>© 2026 Qirui Liu (刘骐瑞)</span>
+          ${renderFooterCounterHtml()}
+        </div>
         <div class="footer-links">
           <a href="#overview">Home</a>
           <a href="#research">Research</a>
@@ -727,6 +873,9 @@ async function renderMarkdownArticle({ post, markdown, isLocalDraft = false, col
   `;
 
   window.scrollTo({ top: 0, behavior: 'instant' });
+  if (!isLocalDraft) {
+    trackVisit(`${isLife ? 'life' : 'notes'}/${encodeURIComponent(post.slug)}`, { isArticle: true });
+  }
 
   const copyMdBtn = document.getElementById('copy-raw-md');
   if (copyMdBtn) {
@@ -994,7 +1143,10 @@ function renderLifeIndexView() {
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <span>© 2026 Qirui Liu (刘骐瑞)</span>
+        <div class="footer-left">
+          <span>© 2026 Qirui Liu (刘骐瑞)</span>
+          ${renderFooterCounterHtml()}
+        </div>
         <div class="footer-links">
           <a href="#overview">Home</a>
           <a href="#research">Research</a>
@@ -1005,6 +1157,7 @@ function renderLifeIndexView() {
   `;
 
   window.scrollTo({ top: 0, behavior: 'instant' });
+  trackVisit('life');
 }
 
 /* ==========================================================================
